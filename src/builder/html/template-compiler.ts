@@ -23,6 +23,7 @@ import {
   isNgElementMeta,
   isNgTemplateMeta,
 } from './node-handle/node-meta/type-predicate';
+import { TemplateDefinition } from './template-definition';
 
 export class TemplateCompiler {
   private render3ParseResult!: Render3ParseResult;
@@ -59,6 +60,7 @@ export class TemplateCompiler {
   }
   private buildPlatformTemplate() {
     this.parseNode();
+    this.parseNodeV2();
     return this.templateTransform.compile(this.ngNodeMetaList);
   }
   private parseNode() {
@@ -99,5 +101,11 @@ export class TemplateCompiler {
       template: template,
       context: Array.from(new Set(context)),
     };
+  }
+
+  private parseNodeV2() {
+    const nodes = this.render3ParseResult.nodes;
+    const definition = new TemplateDefinition(nodes);
+    definition.run();
   }
 }
