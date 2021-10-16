@@ -81,63 +81,62 @@ export abstract class WxTransformLike extends TemplateTransformBase {
   private ngTemplateTransform(node: NgTemplateMeta): string {
     const children = node.children.map((child) => this._compileTemplate(child));
     let content = '';
-    if (node.directive.type === 'none') {
-      this.exportTemplateList.push({
-        name: node.directive.name[0].name,
-        content: `<template name="${
-          node.directive.name[0].name
-        }">${children.join('')}</template>`,
-      });
-      return content;
-    } else if (node.directive.type === 'if') {
-      if (node.directive.thenTemplateRef) {
-        content += `<block ${this.directivePrefix}:if="${this.insertValue(
-          node.directive.assert
-        )}"><template is="${
-          node.directive.thenTemplateRef.value
-        }" ${this.getTemplateDataStr(
-          node.directive.thenTemplateRef.value
-        )}></template></block>`;
-      } else {
-        content += `<block ${this.directivePrefix}:if="${this.insertValue(
-          node.directive.assert
-        )}">${children.join('')}</block>`;
-      }
-      if (node.directive.falseTemplateRef) {
-        content += `<block  ${this.directivePrefix}:else><template is="${
-          node.directive.falseTemplateRef
-        }" ${this.getTemplateDataStr(
-          node.directive.falseTemplateRef.value
-        )}></template></block>`;
-      }
-      return content;
-    } else if (node.directive.type === 'for') {
-      return `<block ${this.directivePrefix}:for="{{${node.directive.for}}}" ${
-        this.directivePrefix
-      }:for-item="${node.directive.item}" ${this.directivePrefix}:for-index="${
-        node.directive.index
-      }">${children.join('')}</block>`;
-    } else if (node.directive.type === 'switch') {
-      if (node.directive.case) {
-        if (node.directive.first) {
-          return `<block ${this.directivePrefix}:if="{{${
-            node.directive.switchValue
-          }===${node.directive.case}}}">${children.join('')}</block>`;
+    const directiveList = node.directive;
+    for (let i = 0; i < directiveList.length; i++) {
+      const directive = directiveList[i];
+      if (directive.type === 'none') {
+        this.exportTemplateList.push({
+          name: directive.name[0].name,
+          content: `<template name="${directive.name[0].name}">${children.join(
+            ''
+          )}</template>`,
+        });
+      } else if (directive.type === 'if') {
+        if (directive.thenTemplateRef) {
+          content += `<block ${this.directivePrefix}:if="${this.insertValue(
+            directive.assert
+          )}"><template is="${directive.thenTemplateRef.value}" data="{{...${
+            directive.trueVariable
+          }}}"></template></block>`;
         } else {
-          return `<block ${this.directivePrefix}:elif="{{${
-            node.directive.switchValue
-          }===${node.directive.case}}}">${children.join('')}</block>`;
+          throw new Error('这里应该被废弃');
+          // content += `<block ${this.directivePrefix}:if="${this.insertValue(
+          //   directive.assert
+          // )}">${children.join('')}</block>`;
         }
-      } else if (node.directive.default) {
-        return `<block ${this.directivePrefix}:else>${children.join(
-          ''
-        )}</block>`;
+        if (directive.falseTemplateRef) {
+          content += `<block  ${this.directivePrefix}:else><template is="${directive.falseTemplateRef}" data="{{...${directive.falseVariable}}}"></template></block>`;
+        }
+        // return content;
+      } else if (directive.type === 'for') {
+        content += `<block ${this.directivePrefix}:for="{{${directive.for}}}" ${
+          this.directivePrefix
+        }:for-item="${directive.item}" ${this.directivePrefix}:for-index="${
+          directive.index
+        }">${children.join('')}</block>`;
+      } else if (directive.type === 'switch') {
+        if (directive.case) {
+          if (directive.first) {
+            content += `<block ${this.directivePrefix}:if="{{${
+              directive.switchValue
+            }===${directive.case}}}">${children.join('')}</block>`;
+          } else {
+            content += `<block ${this.directivePrefix}:elif="{{${
+              directive.switchValue
+            }===${directive.case}}}">${children.join('')}</block>`;
+          }
+        } else if (directive.default) {
+          content += `<block ${this.directivePrefix}:else>${children.join(
+            ''
+          )}</block>`;
+        } else {
+          throw new Error('未知的解析指令');
+        }
       } else {
-        throw new Error('未知的解析指令');
+        throw new Error('未知的解析节点');
       }
-    } else {
-      throw new Error('未知的解析节点');
     }
+    return content;
   }
   private ngTextTransform(node: NgTextMeta): string {
     return node.value;

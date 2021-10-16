@@ -1,6 +1,7 @@
 import { ASTWithSource, Interpolation } from '@angular/compiler';
 import { BoundText } from '@angular/compiler/src/render3/r3_ast';
 import { ExpressionConvert } from '../expression-to-string';
+import { TemplateDefinition } from '../template-definition';
 import {
   NgBoundTextMeta,
   NgElementMeta,
@@ -14,6 +15,8 @@ export class ParsedNgBoundText implements ParsedNode<NgBoundTextMeta> {
   valueList: NgBoundTextMeta['values'] = [];
   kind = NgNodeKind.BoundText;
   bindValueList: string[] = [];
+  private templateDefinition!: TemplateDefinition;
+
   constructor(
     private node: BoundText,
     public parent: ParsedNode<NgNodeMeta> | undefined
@@ -22,7 +25,7 @@ export class ParsedNgBoundText implements ParsedNode<NgBoundTextMeta> {
     const ast = (this.node.value as ASTWithSource).ast as Interpolation;
     ast.strings.forEach((item, i) => {
       this.valueList.push(new PlainValue(item));
-      const expressionConvert = new ExpressionConvert();
+      const expressionConvert = new ExpressionConvert(this.templateDefinition);
       const result = expressionConvert.toString(ast.expressions[i]);
       if (result) {
         this.bindValueList.push(...expressionConvert.propertyReadList);
@@ -51,5 +54,8 @@ export class ParsedNgBoundText implements ParsedNode<NgBoundTextMeta> {
       ];
     }
     return [];
+  }
+  setDefinition(definition: TemplateDefinition) {
+    this.templateDefinition = definition;
   }
 }

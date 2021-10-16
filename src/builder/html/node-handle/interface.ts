@@ -57,6 +57,8 @@ export interface NgIfDirective {
   assert: BindValue | PlainValue;
   thenTemplateRef: BindValue | undefined;
   falseTemplateRef: BindValue;
+  trueVariable: string;
+  falseVariable: string;
 }
 export interface NgForDirective {
   type: 'for';
@@ -78,7 +80,7 @@ export interface NgDefaultDirective {
 export interface NgTemplateMeta<T = NgDirective> extends NgNodeMeta {
   kind: NgNodeKind.Template;
   children: NgNodeMeta[];
-  directive: T;
+  directive: T[];
   data: string[];
 }
 export interface NgContentMeta extends NgNodeMeta {

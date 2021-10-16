@@ -6,6 +6,7 @@ import {
   TextAttribute,
 } from '@angular/compiler/src/render3/r3_ast';
 import { ExpressionConvert } from '../expression-to-string';
+import { TemplateDefinition } from '../template-definition';
 import { ParsedNgElement } from './element';
 import { GlobalContext } from './global-context';
 import {
@@ -29,6 +30,7 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
   declareContext: Record<string, string> = {};
   autoGenerateValueList: string[] = [];
   private children: ParsedNode<NgNodeMeta>[] = [];
+  private templateDefinition!: TemplateDefinition;
 
   constructor(
     private node: Template,
@@ -41,7 +43,7 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
   setNgNodeChildren(children: ParsedNode<NgNodeMeta>[]) {
     this.children = children;
   }
-  private transform(): NgDirective | undefined {
+  private transform(): NgDirective[] | undefined {
     /**
      * 根据指令判断如何处理
      *
@@ -58,11 +60,11 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
     if (isNgIf) {
       return this.ngIfTransform();
     } else if (isNgFor) {
-      return this.ngForTramsform();
+      return [this.ngForTramsform()];
     } else if (isSwitch) {
-      return this.ngSwitchTransform();
+      return [this.ngSwitchTransform()];
     } else if (this.node.tagName === 'ng-template') {
-      return this.defaultTransform();
+      return [this.defaultTransform()];
     } else {
       throw new Error('没有找到对应指令.目前仅支持ngIf,ngFor,ngSwitch');
     }
@@ -76,16 +78,29 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
       })),
     };
   }
-  private ngIfTransform(): NgIfDirective {
+  private ngIfTransform(): NgDirective[] {
     const ngIf = this.attrs.find((item) => item.name === 'ngIf')!;
     const ngIfElse = this.attrs.find((item) => item.name === 'ngIfElse')!;
     const ngIfThen = this.attrs.find((item) => item.name === 'ngIfThen')!;
-    return {
-      type: 'if',
-      assert: this.getAttrValue(ngIf),
-      thenTemplateRef: ngIf && ngIfThen && this.getAttrValue(ngIfThen, false),
-      falseTemplateRef: ngIfElse && this.getAttrValue(ngIfElse, false),
-    };
+    const ngIfTemplateName = `ngIf${Math.random().toString(36).slice(2)}`;
+    return [
+      {
+        type: 'if',
+        assert: this.getAttrValue(ngIf),
+        thenTemplateRef:
+          (ngIf && ngIfThen && this.getAttrValue(ngIfThen, false)) ||
+          new PlainValue(ngIfTemplateName),
+        falseTemplateRef: ngIfElse && this.getAttrValue(ngIfElse, false),
+        trueVariable:
+          this.templateDefinition.templateCallPositionMap.get(ngIf)!,
+        falseVariable:
+          this.templateDefinition.templateCallPositionMap.get(ngIfElse)!,
+      },
+      {
+        type: 'none',
+        name: [{ name: ngIfTemplateName, value: ngIfTemplateName }],
+      },
+    ];
   }
   private ngForTramsform(): NgForDirective {
     const ngFor = this.attrs.find((item) => item.name === 'ngForOf')!;
@@ -125,7 +140,9 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
       }
       parent = parent.parent;
     }
-    const switchValueExpression = new ExpressionConvert();
+    const switchValueExpression = new ExpressionConvert(
+      this.templateDefinition
+    );
     const switchValue = switchValueExpression.toString(
       (result!.ngSwitch.value as ASTWithSource).ast
     );
@@ -145,7 +162,7 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
     if (typeof value.value === 'string') {
       return new PlainValue(value.value);
     } else {
-      const instance = new ExpressionConvert();
+      const instance = new ExpressionConvert(this.templateDefinition);
       const string = instance.toString((value.value as ASTWithSource).ast);
       const result = new BindValue(string);
       if (record) {
@@ -155,16 +172,20 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
     }
   }
   getNodeMeta(globalContext: GlobalContext): NgTemplateMeta {
-    const directive = this.transform()!;
+    const directiveList = this.transform()!;
 
     const meta: NgTemplateMeta = {
       kind: NgNodeKind.Template,
       children: this.children.map((child) => child.getNodeMeta(globalContext)),
-      directive: directive,
+      directive: directiveList,
       data: this.getBindValueList().map((item) => item.split('.')[0]),
     };
-    if (directive.type == 'none') {
-      globalContext.addTemplate(meta as NgTemplateMeta<NgDefaultDirective>);
+    for (let i = 0; i < directiveList.length; i++) {
+      const directive = directiveList[i];
+
+      if (directive.type == 'none') {
+        globalContext.addTemplate(meta as NgTemplateMeta<NgDefaultDirective>);
+      }
     }
     return meta;
   }
@@ -190,5 +211,8 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
       ];
     }
     return [];
+  }
+  setDefinition(definition: TemplateDefinition) {
+    this.templateDefinition = definition;
   }
 }

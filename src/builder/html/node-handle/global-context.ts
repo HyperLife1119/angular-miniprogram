@@ -8,7 +8,9 @@ export class GlobalContext {
   }
   findTemplate(name: string) {
     return this.templateList.find((item) =>
-      item.directive.name.some((item) => item.name === name)
+      item.directive.find((directive) =>
+        directive.name.some((item) => item.name === name)
+      )
     );
   }
 }

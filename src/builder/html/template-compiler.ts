@@ -60,10 +60,10 @@ export class TemplateCompiler {
   }
   private buildPlatformTemplate() {
     this.parseNode();
-    this.parseNodeV2();
     return this.templateTransform.compile(this.ngNodeMetaList);
   }
   private parseNode() {
+    const definition = this.getTemplateDefinition();
     const nodes = this.render3ParseResult.nodes;
 
     for (let i = 0; i < nodes.length; i++) {
@@ -71,7 +71,8 @@ export class TemplateCompiler {
       const parsedNode = generateParsedNode(
         node,
         undefined,
-        this.globalContext
+        this.globalContext,
+        definition
       );
       this.ngNodeMetaList.push(parsedNode.getNodeMeta(this.globalContext));
     }
@@ -103,9 +104,10 @@ export class TemplateCompiler {
     };
   }
 
-  private parseNodeV2() {
+  private getTemplateDefinition() {
     const nodes = this.render3ParseResult.nodes;
     const definition = new TemplateDefinition(nodes);
     definition.run();
+    return definition;
   }
 }

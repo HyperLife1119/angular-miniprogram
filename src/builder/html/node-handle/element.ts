@@ -1,6 +1,7 @@
 import { ASTWithSource } from '@angular/compiler';
 import { BoundAttribute, Element } from '@angular/compiler/src/render3/r3_ast';
 import { ExpressionConvert } from '../expression-to-string';
+import { TemplateDefinition } from '../template-definition';
 import { TagEventMeta } from './event';
 import { GlobalContext } from './global-context';
 import { NgElementMeta, NgNodeKind, NgNodeMeta, ParsedNode } from './interface';
@@ -18,6 +19,7 @@ export class ParsedNgElement implements ParsedNode<NgElementMeta> {
   ngSwitch: BoundAttribute | undefined;
   ngSwitchFirst = true;
   singleClosedTag = false;
+  private templateDefinition!: TemplateDefinition;
   constructor(
     private node: Element,
     public parent: ParsedNode<NgNodeMeta> | undefined
@@ -34,7 +36,7 @@ export class ParsedNgElement implements ParsedNode<NgElementMeta> {
       this.attributeObject['class'] = this.classList.join(' ');
     }
     this.node.inputs.forEach((input) => {
-      const expressionConvert = new ExpressionConvert();
+      const expressionConvert = new ExpressionConvert(this.templateDefinition);
       const result = expressionConvert.toString(
         (input.value as ASTWithSource).ast
       );
@@ -128,5 +130,8 @@ export class ParsedNgElement implements ParsedNode<NgElementMeta> {
       ];
     }
     return [];
+  }
+  setDefinition(definition: TemplateDefinition) {
+    this.templateDefinition = definition;
   }
 }

@@ -19,10 +19,12 @@ import {
 export class TemplateDefinition implements Visitor {
   /** 变量对应的值索引 */
   varIndexMap = new Map<any, number>();
-  private templateDefinitionMap = new Map<Template, TemplateDefinition>();
+  templateDefinitionMap = new Map<Template, TemplateDefinition>();
   /** 模板某个指令对应的模板定义  */
   templateUseMap = new Map<any, TemplateDefinition>();
   index = 0;
+  templateCallPositionMap = new Map<any, string>();
+  private directiveObject = { ngIf: 0, ngIfElse: 0 };
   constructor(private nodes: Node[]) {}
   visit?(node: Node) {}
   visitElement(element: Element) {
@@ -58,7 +60,34 @@ export class TemplateDefinition implements Visitor {
   visitTemplate(template: Template) {
     const instance = new TemplateDefinition(template.children);
     this.templateDefinitionMap.set(template, instance);
-
+    const ngIfThen = template.templateAttrs.find(
+      (attr) => attr.name === 'ngIf'
+    );
+    const ngElseIf = template.templateAttrs.find(
+      (attr) => attr.name === 'ngIfElse'
+    );
+    template.templateAttrs.forEach((item) => {
+      if (item instanceof BoundAttribute) {
+        if (item.value !== undefined) {
+          this.varIndexMap.set((item.value as any).ast, this.index);
+          this.index++;
+        }
+      }
+    });
+    if (ngIfThen) {
+      this.templateCallPositionMap.set(
+        ngIfThen,
+        `ngIfThen${this.directiveObject.ngIf}`
+      );
+      this.directiveObject.ngIf += 1;
+    }
+    if (ngElseIf) {
+      this.templateCallPositionMap.set(
+        ngElseIf,
+        `ngElseIf${this.directiveObject.ngIf}`
+      );
+      this.directiveObject.ngIfElse += 1;
+    }
     instance.run();
   }
   visitContent(content: Content) {}
