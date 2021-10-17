@@ -23,7 +23,7 @@ export class TemplateDefinition implements Visitor {
   private index = 0;
   templateCallPositionMap = new Map<any, string>();
   private directiveObject = {
-    ngIf: 0,
+    ngIfThen: 0,
     ngIfElse: 0,
     ngSwitchCase: 0,
     ngSwitchDefault: 0,
@@ -97,14 +97,14 @@ export class TemplateDefinition implements Visitor {
     if (ngIfThen) {
       this.templateCallPositionMap.set(
         ngIfThen,
-        `ngIfThen${this.directiveObject.ngIf}`
+        `ngIfThen${this.directiveObject.ngIfThen}`
       );
-      this.directiveObject.ngIf += 1;
+      this.directiveObject.ngIfThen += 1;
     }
     if (ngElseIf) {
       this.templateCallPositionMap.set(
         ngElseIf,
-        `ngElseIf${this.directiveObject.ngIf}`
+        `ngElseIf${this.directiveObject.ngIfElse}`
       );
       this.directiveObject.ngIfElse += 1;
     }

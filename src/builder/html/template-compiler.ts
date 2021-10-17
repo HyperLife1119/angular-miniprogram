@@ -82,25 +82,11 @@ export class TemplateCompiler {
     this.parseHtmlToAst();
     const content = this.buildPlatformTemplate();
     const template = this.templateTransform.getExportTemplate();
-    const context = this.ngNodeMetaList
-      .filter(
-        (item) =>
-          isNgElementMeta(item) ||
-          isNgTemplateMeta(item) ||
-          isNgBoundTextMeta(item)
-      )
-      .map(
-        (item) =>
-          (item as NgElementMeta | NgTemplateMeta | NgBoundTextMeta).data
-      )
-      .reduce((pre, cur) => {
-        pre.push(...cur);
-        return pre;
-      }, []);
+
     return {
       content: content,
       template: template,
-      context: Array.from(new Set(context)),
+      context: [],
     };
   }
 

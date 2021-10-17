@@ -1,4 +1,5 @@
 import { AST } from '@angular/compiler/src/expression_parser/ast';
+import { VIEW_VALUE_LIST } from './const';
 import { TemplateDefinition } from './template-definition';
 
 export class ExpressionConvert {
@@ -10,6 +11,6 @@ export class ExpressionConvert {
       throw new Error(`未找到变量分配的索引${expression?.toString()}`);
     }
 
-    return `__viewValue[${varIndex}]`;
+    return `${VIEW_VALUE_LIST}[${varIndex}]`;
   }
 }

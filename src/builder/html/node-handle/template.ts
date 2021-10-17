@@ -1,4 +1,4 @@
-import { ASTWithSource } from '@angular/compiler';
+import { ASTWithSource, PropertyRead } from '@angular/compiler';
 import {
   BoundAttribute,
   Template,
@@ -82,9 +82,17 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
         type: 'if',
         assert: this.getAttrValue(ngIf),
         thenTemplateRef:
-          (ngIf && ngIfThen && this.getAttrValue(ngIfThen, false)) ||
+          (ngIf &&
+            ngIfThen &&
+            new BindValue(
+              ((ngIfThen?.value as ASTWithSource)?.ast as PropertyRead)?.name
+            )) ||
           new BindValue(ngIfTemplateName),
-        falseTemplateRef: ngIfElse && this.getAttrValue(ngIfElse, false),
+        falseTemplateRef:
+          ngIfElse &&
+          new BindValue(
+            ((ngIfElse?.value as ASTWithSource)?.ast as PropertyRead)?.name
+          ),
         trueVariable:
           this.templateDefinition.templateCallPositionMap.get(ngIf)!,
         falseVariable:
