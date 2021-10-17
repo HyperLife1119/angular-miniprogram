@@ -1,5 +1,4 @@
 import { ASTWithSource } from '@angular/compiler';
-import { TypeCheckShimGenerator } from '@angular/compiler-cli/src/ngtsc/typecheck';
 import {
   BoundAttribute,
   Template,
@@ -7,28 +6,23 @@ import {
 } from '@angular/compiler/src/render3/r3_ast';
 import { ExpressionConvert } from '../expression-to-string';
 import { TemplateDefinition } from '../template-definition';
-import { ParsedNgElement } from './element';
 import { GlobalContext } from './global-context';
 import {
   NgDefaultDirective,
   NgDirective,
-  NgForDirective,
-  NgIfDirective,
   NgNodeKind,
   NgNodeMeta,
-  NgSwitchDirective,
   NgTemplateMeta,
   ParsedNode,
 } from './interface';
 import { isElement } from './type-predicate';
-import { BindValue, PlainValue } from './value';
+import { BindValue } from './value';
 
 export class NgTemplate implements ParsedNode<NgTemplateMeta> {
   kind = NgNodeKind.Template;
   attrs!: (BoundAttribute | TextAttribute)[];
   bindValueList: string[] = [];
   declareContext: Record<string, string> = {};
-  autoGenerateValueList: string[] = [];
   private children: ParsedNode<NgNodeMeta>[] = [];
   private templateDefinition!: TemplateDefinition;
 
@@ -60,9 +54,9 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
     if (isNgIf) {
       return this.ngIfTransform();
     } else if (isNgFor) {
-      return [this.ngForTramsform()];
+      return this.ngForTramsform();
     } else if (isSwitch) {
-      return [this.ngSwitchTransform()];
+      return this.ngSwitchTransform();
     } else if (this.node.tagName === 'ng-template') {
       return [this.defaultTransform()];
     } else {
@@ -89,7 +83,7 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
         assert: this.getAttrValue(ngIf),
         thenTemplateRef:
           (ngIf && ngIfThen && this.getAttrValue(ngIfThen, false)) ||
-          new PlainValue(ngIfTemplateName),
+          new BindValue(ngIfTemplateName),
         falseTemplateRef: ngIfElse && this.getAttrValue(ngIfElse, false),
         trueVariable:
           this.templateDefinition.templateCallPositionMap.get(ngIf)!,
@@ -102,27 +96,27 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
       },
     ];
   }
-  private ngForTramsform(): NgForDirective {
-    const ngFor = this.attrs.find((item) => item.name === 'ngForOf')!;
-    const ngForValue = this.getAttrValue(ngFor);
-    const ngForItem = this.node.variables.find(
-      (item) => item.value === '$implicit'
-    )!;
-    this.autoGenerateValueList.push(ngForItem.name);
-    const ngForIndex = this.node.variables.find(
-      (item) => item.value === 'index'
-    );
-    if (ngForIndex) {
-      this.autoGenerateValueList.push(ngForIndex.name);
-    }
-    return {
-      type: 'for',
-      for: ngForValue,
-      item: ngForItem.name,
-      index: ngForIndex ? ngForIndex.name : 'index',
-    };
+  private ngForTramsform(): NgDirective[] {
+    const ngFor = this.attrs.find((item) => item.name === 'ngFor')!;
+    const ngForOf = this.attrs.find((item) => item.name === 'ngForOf')!;
+    const ngForValue = this.getAttrValue(ngForOf);
+    const ngForTemplateName = `ngFor${Math.random().toString(36).slice(2)}`;
+
+    return [
+      {
+        type: 'for',
+        for: ngForValue,
+        templateName: ngForTemplateName,
+        templateVariable:
+          this.templateDefinition.templateCallPositionMap.get(ngFor)!,
+      },
+      {
+        type: 'none',
+        name: [{ name: ngForTemplateName, value: ngForTemplateName }],
+      },
+    ];
   }
-  private ngSwitchTransform(): NgDirective {
+  private ngSwitchTransform(): NgDirective[] {
     const ngSwitchDefault = this.attrs.find(
       (item) => item.name === 'ngSwitchDefault'
     );
@@ -147,20 +141,34 @@ export class NgTemplate implements ParsedNode<NgTemplateMeta> {
       (result!.ngSwitch.value as ASTWithSource).ast
     );
     this.bindValueList.push(...switchValueExpression.propertyReadList);
-    return {
-      type: 'switch',
-      default: !!ngSwitchDefault,
-      case: ngSwitchCase && this.getAttrValue(ngSwitchCase),
-      switchValue: switchValue,
-      first: result!.first,
-    };
+    const ngSwitchTemplateName = `ngSwitch${Math.random()
+      .toString(36)
+      .slice(2)}`;
+
+    return [
+      {
+        type: 'switch',
+        default: !!ngSwitchDefault,
+        case: ngSwitchCase && this.getAttrValue(ngSwitchCase),
+        switchValue: switchValue,
+        first: result!.first,
+        templateVariable: this.templateDefinition.templateCallPositionMap.get(
+          ngSwitchDefault || ngSwitchCase
+        )!,
+        templateName: ngSwitchTemplateName,
+      },
+      {
+        type: 'none',
+        name: [{ name: ngSwitchTemplateName, value: ngSwitchTemplateName }],
+      },
+    ];
   }
   private getAttrValue(
     value: BoundAttribute | TextAttribute,
     record: boolean = true
   ) {
     if (typeof value.value === 'string') {
-      return new PlainValue(value.value);
+      throw new Error('不应该存在纯文本变量');
     } else {
       const instance = new ExpressionConvert(this.templateDefinition);
       const string = instance.toString((value.value as ASTWithSource).ast);

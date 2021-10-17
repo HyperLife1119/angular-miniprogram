@@ -10,11 +10,7 @@ export class PlainValue {
     return this.value;
   }
 }
-export function isBindValue(value: BindValue | PlainValue): value is BindValue {
+
+export function isBindValue(value: BindValue): value is BindValue {
   return value instanceof BindValue;
-}
-export function isPlainValue(
-  value: BindValue | PlainValue
-): value is PlainValue {
-  return value instanceof PlainValue;
 }

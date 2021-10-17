@@ -1,11 +1,6 @@
-import {
-  BoundAttribute,
-  BoundEvent,
-  Node,
-} from '@angular/compiler/src/render3/r3_ast';
 import { TagEventMeta } from './event';
 import { GlobalContext } from './global-context';
-import { BindValue, PlainValue } from './value';
+import { BindValue } from './value';
 
 export interface ParsedNode<T> {
   kind: NgNodeKind;
@@ -39,7 +34,7 @@ export interface NgElementMeta extends NgNodeMeta {
 }
 export interface NgBoundTextMeta extends NgNodeMeta {
   kind: NgNodeKind.BoundText;
-  values: (BindValue | PlainValue)[];
+  values: BindValue[];
   data: string[];
 }
 export interface NgTextMeta extends NgNodeMeta {
@@ -54,7 +49,7 @@ export type NgDirective =
   | NgDefaultDirective;
 export interface NgIfDirective {
   type: 'if';
-  assert: BindValue | PlainValue;
+  assert: BindValue;
   thenTemplateRef: BindValue | undefined;
   falseTemplateRef: BindValue;
   trueVariable: string;
@@ -62,16 +57,18 @@ export interface NgIfDirective {
 }
 export interface NgForDirective {
   type: 'for';
-  for: BindValue | PlainValue;
-  item: string;
-  index: string;
+  for: BindValue;
+  templateName: string;
+  templateVariable: string;
 }
 export interface NgSwitchDirective {
   type: 'switch';
   switchValue: string;
-  case: BindValue | PlainValue | undefined;
+  case: BindValue | undefined;
   default: boolean;
   first: boolean;
+  templateVariable: string;
+  templateName: string;
 }
 export interface NgDefaultDirective {
   type: 'none';

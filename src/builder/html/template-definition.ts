@@ -18,13 +18,17 @@ import {
 
 export class TemplateDefinition implements Visitor {
   /** 变量对应的值索引 */
-  varIndexMap = new Map<any, number>();
+  viewValueIndexMap = new Map<any, number>();
   templateDefinitionMap = new Map<Template, TemplateDefinition>();
-  /** 模板某个指令对应的模板定义  */
-  templateUseMap = new Map<any, TemplateDefinition>();
-  index = 0;
+  private index = 0;
   templateCallPositionMap = new Map<any, string>();
-  private directiveObject = { ngIf: 0, ngIfElse: 0 };
+  private directiveObject = {
+    ngIf: 0,
+    ngIfElse: 0,
+    ngSwitchCase: 0,
+    ngSwitchDefault: 0,
+    ngFor: 0,
+  };
   constructor(private nodes: Node[]) {}
   visit?(node: Node) {}
   visitElement(element: Element) {
@@ -44,9 +48,16 @@ export class TemplateDefinition implements Visitor {
         ) {
           length = 2;
           // todo 这里的索引可能是0也可能是1
-          this.varIndexMap.set((item.value as ASTWithSource).ast, this.index);
+          this.viewValueIndexMap.set(
+            (item.value as ASTWithSource).ast,
+            this.index
+          );
+          this.index += length;
         } else if (item.type !== BindingType.Animation) {
-          this.varIndexMap.set((item.value as ASTWithSource).ast, this.index);
+          this.viewValueIndexMap.set(
+            (item.value as ASTWithSource).ast,
+            this.index
+          );
           this.index++;
         }
       });
@@ -56,6 +67,7 @@ export class TemplateDefinition implements Visitor {
    * 先查定义
    * 然后再查引用
    * 最后再ngif及ngfor,ngtemplateoutlet上面找对应的模板,进行标识
+   * todo 对于自定义结构型指令的处理
    */
   visitTemplate(template: Template) {
     const instance = new TemplateDefinition(template.children);
@@ -66,10 +78,18 @@ export class TemplateDefinition implements Visitor {
     const ngElseIf = template.templateAttrs.find(
       (attr) => attr.name === 'ngIfElse'
     );
+    const ngSwitchCase = template.templateAttrs.find(
+      (attr) => attr.name === 'ngSwitchCase'
+    );
+    const ngSwitchDefault = template.templateAttrs.find(
+      (attr) => attr.name === 'ngSwitchDefault'
+    );
+    const ngFor = template.templateAttrs.find((attr) => attr.name === 'ngFor');
+
     template.templateAttrs.forEach((item) => {
       if (item instanceof BoundAttribute) {
         if (item.value !== undefined) {
-          this.varIndexMap.set((item.value as any).ast, this.index);
+          this.viewValueIndexMap.set((item.value as any).ast, this.index);
           this.index++;
         }
       }
@@ -88,6 +108,27 @@ export class TemplateDefinition implements Visitor {
       );
       this.directiveObject.ngIfElse += 1;
     }
+    if (ngSwitchCase) {
+      this.templateCallPositionMap.set(
+        ngSwitchCase,
+        `ngSwitchCase${this.directiveObject.ngSwitchCase}`
+      );
+      this.directiveObject.ngSwitchCase += 1;
+    }
+    if (ngSwitchDefault) {
+      this.templateCallPositionMap.set(
+        ngSwitchDefault,
+        `ngSwitchDefault${this.directiveObject.ngSwitchDefault}`
+      );
+      this.directiveObject.ngSwitchDefault += 1;
+    }
+    if (ngFor) {
+      this.templateCallPositionMap.set(
+        ngFor,
+        `ngFor${this.directiveObject.ngFor}`
+      );
+      this.directiveObject.ngFor += 1;
+    }
     instance.run();
   }
   visitContent(content: Content) {}
@@ -95,45 +136,20 @@ export class TemplateDefinition implements Visitor {
   visitReference(reference: Reference) {}
   visitTextAttribute(attribute: TextAttribute) {}
   visitBoundAttribute(attribute: BoundAttribute) {}
-  visitBoundEvent(attribute: BoundEvent) {
-    return undefined;
-  }
-  visitText(text: Text) {
-    return undefined;
-  }
+  visitBoundEvent(attribute: BoundEvent) {}
+  visitText(text: Text) {}
   visitBoundText(text: BoundText) {
     const value = (text.value as ASTWithSource).ast;
     if (value instanceof Interpolation) {
       const length = value.expressions.length;
       value.expressions.forEach((expression, i) => {
-        this.varIndexMap.set(expression, i + this.index);
+        this.viewValueIndexMap.set(expression, i + this.index);
       });
       this.index += length;
     }
   }
-  visitIcu(icu: Icu) {
-    return undefined;
-  }
+  visitIcu(icu: Icu) {}
   run() {
     visitAll(this, this.nodes);
-    this.templateDefinitionMap.forEach((key, template) => {
-      const ngIf = template.templateAttrs.find((attr) => attr.name === 'ngIf');
-      const ngElseIf = template.templateAttrs.find(
-        (attr) => attr.name === 'ngIfElse'
-      );
-      if (ngIf) {
-        this.templateUseMap.set(ngIf, key);
-      }
-      if (ngElseIf) {
-        this.templateDefinitionMap.forEach((value, key) => {
-          const find = key.references.find(
-            (item) => item.name === (ngElseIf?.value as any).source
-          );
-          if (find) {
-            this.templateUseMap.set(ngElseIf, value);
-          }
-        });
-      }
-    });
   }
 }

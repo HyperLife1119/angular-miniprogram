@@ -19,6 +19,7 @@ import { TemplateTransformBase } from '../transform.base';
 export abstract class WxTransformLike extends TemplateTransformBase {
   abstract directivePrefix: string;
   abstract viewContextName: string;
+  private readonly templateObjectName = '__viewTemplate';
   private exportTemplateList: { name: string; content: string }[] = [];
   constructor() {
     super();
@@ -96,39 +97,25 @@ export abstract class WxTransformLike extends TemplateTransformBase {
           content += `<block ${this.directivePrefix}:if="${this.insertValue(
             directive.assert
           )}"><template is="${directive.thenTemplateRef.value}" data="{{...${
-            directive.trueVariable
-          }}}"></template></block>`;
+            this.templateObjectName
+          }.${directive.trueVariable}}}"></template></block>`;
         } else {
           throw new Error('这里应该被废弃');
-          // content += `<block ${this.directivePrefix}:if="${this.insertValue(
-          //   directive.assert
-          // )}">${children.join('')}</block>`;
         }
         if (directive.falseTemplateRef) {
-          content += `<block  ${this.directivePrefix}:else><template is="${directive.falseTemplateRef}" data="{{...${directive.falseVariable}}}"></template></block>`;
+          content += `<block  ${this.directivePrefix}:else><template is="${directive.falseTemplateRef}" data="{{...${this.templateObjectName}.${directive.falseVariable}}}"></template></block>`;
         }
-        // return content;
       } else if (directive.type === 'for') {
-        content += `<block ${this.directivePrefix}:for="{{${directive.for}}}" ${
-          this.directivePrefix
-        }:for-item="${directive.item}" ${this.directivePrefix}:for-index="${
-          directive.index
-        }">${children.join('')}</block>`;
+        content += `<block ${this.directivePrefix}:for="{{${directive.for}}}"><template is="${directive.templateName}" data="{{...${this.templateObjectName}.${directive.templateVariable}[index]}}"></template></block>`;
       } else if (directive.type === 'switch') {
         if (directive.case) {
           if (directive.first) {
-            content += `<block ${this.directivePrefix}:if="{{${
-              directive.switchValue
-            }===${directive.case}}}">${children.join('')}</block>`;
+            content += `<block ${this.directivePrefix}:if="{{${directive.switchValue}===${directive.case}}}"><template is="${directive.templateName}" data="{{...${this.templateObjectName}.${directive.templateVariable}}}"></template></block>`;
           } else {
-            content += `<block ${this.directivePrefix}:elif="{{${
-              directive.switchValue
-            }===${directive.case}}}">${children.join('')}</block>`;
+            content += `<block ${this.directivePrefix}:elif="{{${directive.switchValue}===${directive.case}}}"><template is="${directive.templateName}" data="{{...${this.templateObjectName}.${directive.templateVariable}}}"></template></block>`;
           }
         } else if (directive.default) {
-          content += `<block ${this.directivePrefix}:else>${children.join(
-            ''
-          )}</block>`;
+          content += `<block ${this.directivePrefix}:else><template is="${directive.templateName}" data="{{...${this.templateObjectName}.${directive.templateVariable}}}"></template></block>`;
         } else {
           throw new Error('未知的解析指令');
         }
@@ -148,23 +135,8 @@ export abstract class WxTransformLike extends TemplateTransformBase {
       return value.value;
     }
   }
-  private getTemplateData(name: string) {
-    return this.globalContext.findTemplate(name)!.data.join(',');
-  }
-  private getTemplateDataStr(name: string) {
-    const templateData = this.getTemplateData(name);
-    if (templateData) {
-      return `data="{{${templateData}}}"`;
-    }
-    return '';
-  }
-  private generateTag(
-    singleClosedTag: boolean,
-    name: string,
-    attr: string,
-    children?: string[]
-  ) {}
+
   getExportTemplate() {
-    return this.exportTemplateList.map((item) => `${item.content}`).join(',');
+    return this.exportTemplateList.map((item) => `${item.content}`).join('');
   }
 }

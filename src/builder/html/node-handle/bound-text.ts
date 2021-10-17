@@ -26,8 +26,8 @@ export class ParsedNgBoundText implements ParsedNode<NgBoundTextMeta> {
     ast.strings.forEach((item, i) => {
       this.valueList.push(new PlainValue(item));
       const expressionConvert = new ExpressionConvert(this.templateDefinition);
-      const result = expressionConvert.toString(ast.expressions[i]);
-      if (result) {
+      if (ast.expressions[i]) {
+        const result = expressionConvert.toString(ast.expressions[i]);
         this.bindValueList.push(...expressionConvert.propertyReadList);
         this.valueList.push(new BindValue(result));
       }
