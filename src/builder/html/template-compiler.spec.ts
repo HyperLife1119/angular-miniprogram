@@ -26,15 +26,15 @@ describe('template-compiler', () => {
   it('ngIf->wx:if', () => {
     let result = defaultTransform(`<div *ngIf="a"></div>`);
     expect(result.content).toContain(`wx:if="{{${VIEW_VALUE_LIST}[0]}}"`);
-    expect(result.content).toContain(`...${VIEW_TEMPLATE_OBJECT}.ngIfThen0`);
+    expect(result.content).toContain(`...${VIEW_TEMPLATE_OBJECT}.ngIf[0][0]`);
     result = defaultTransform(
       `<div *ngIf="a;else elseBlock"></div><ng-template #elseBlock></ng-template>`
     );
     expect(result.content).toContain(`wx:if="{{${VIEW_VALUE_LIST}[0]}}"`);
-    expect(result.content).toContain(`...${VIEW_TEMPLATE_OBJECT}.ngIfThen0`);
+    expect(result.content).toContain(`...${VIEW_TEMPLATE_OBJECT}.ngIf[0][0]`);
     expect(result.content).toContain(`is="elseBlock"`);
     expect(result.content).toContain(
-      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngElseIf0}}"`
+      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngIf[0][0]}}"`
     );
     expect(result.content).toContain(`wx:else`);
     expect(result.template).toContain('name="elseBlock"');
@@ -45,10 +45,10 @@ describe('template-compiler', () => {
     expect(result.content).toContain(`wx:else`);
     expect(result.content).toContain(`is="thenBlock"`);
     expect(result.content).toContain(
-      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngElseIf0}}"`
+      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngIf[0][0]}}"`
     );
     expect(result.content).toContain(
-      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngIfThen0}}"`
+      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngIf[0][0]}}"`
     );
     expect(result.content).toContain(`is="elseBlock"`);
     expect(result.template).toContain('name="elseBlock"');
@@ -107,13 +107,13 @@ describe('template-compiler', () => {
     );
     expect(result.content).toContain(`wx:if="{{${VIEW_VALUE_LIST}[0]}}"`);
     expect(result.content).toContain(
-      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngIfThen0}}"`
+      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngIf[0][0]}}"`
     );
 
     expect(result.template).toContain(`${VIEW_VALUE_LIST}[0]`);
     expect(result.template).toContain(`wx:if="{{${VIEW_VALUE_LIST}[1]}}"`);
     expect(result.template).toContain(
-      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngIfThen0}}"`
+      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngIf[0][0]}}"`
     );
   });
   it('ngFor=>wx:for', () => {
@@ -123,14 +123,14 @@ describe('template-compiler', () => {
 
     expect(result.content).toContain(`wx:for="{{${VIEW_VALUE_LIST}[0]}}"`);
     expect(result.content).toContain(
-      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngFor0[index]}}"`
+      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngFor[0][index]}}"`
     );
     result = defaultTransform(`<div *ngFor="let item of list;let i=index">
     {{item}}
 </div>`);
     expect(result.content).toContain(`wx:for="{{${VIEW_VALUE_LIST}[0]}}"`);
     expect(result.content).toContain(
-      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngFor0[index]}}"`
+      `data="{{...${VIEW_TEMPLATE_OBJECT}.ngFor[0][index]}}"`
     );
   });
   it('ngSwitch=>wx:if', () => {

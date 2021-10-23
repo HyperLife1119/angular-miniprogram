@@ -100,24 +100,24 @@ export abstract class WxTransformLike extends TemplateTransformBase {
             directive.thenTemplateRef.value
           }" data="{{...${VIEW_TEMPLATE_OBJECT}.${
             directive.trueVariable
-          }}}"></template></block>`;
+          }[0]}}"></template></block>`;
         } else {
           throw new Error('这里应该被废弃');
         }
         if (directive.falseTemplateRef) {
-          content += `<block  ${this.directivePrefix}:else><template is="${directive.falseTemplateRef}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.falseVariable}}}"></template></block>`;
+          content += `<block  ${this.directivePrefix}:else><template is="${directive.falseTemplateRef}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.falseVariable}[0]}}"></template></block>`;
         }
       } else if (directive.type === 'for') {
         content += `<block ${this.directivePrefix}:for="{{${directive.for}}}"><template is="${directive.templateName}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.templateVariable}[index]}}"></template></block>`;
       } else if (directive.type === 'switch') {
         if (directive.case) {
           if (directive.first) {
-            content += `<block ${this.directivePrefix}:if="{{${directive.switchValue}===${directive.case}}}"><template is="${directive.templateName}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.templateVariable}}}"></template></block>`;
+            content += `<block ${this.directivePrefix}:if="{{${directive.switchValue}===${directive.case}}}"><template is="${directive.templateName}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.templateVariable}[0]}}"></template></block>`;
           } else {
-            content += `<block ${this.directivePrefix}:elif="{{${directive.switchValue}===${directive.case}}}"><template is="${directive.templateName}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.templateVariable}}}"></template></block>`;
+            content += `<block ${this.directivePrefix}:elif="{{${directive.switchValue}===${directive.case}}}"><template is="${directive.templateName}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.templateVariable}[0]}}"></template></block>`;
           }
         } else if (directive.default) {
-          content += `<block ${this.directivePrefix}:else><template is="${directive.templateName}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.templateVariable}}}"></template></block>`;
+          content += `<block ${this.directivePrefix}:else><template is="${directive.templateName}" data="{{...${VIEW_TEMPLATE_OBJECT}.${directive.templateVariable}[0]}}"></template></block>`;
         } else {
           throw new Error('未知的解析指令');
         }

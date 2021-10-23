@@ -23,8 +23,7 @@ export class TemplateDefinition implements Visitor {
   private index = 0;
   templateCallPositionMap = new Map<any, string>();
   private directiveObject = {
-    ngIfThen: 0,
-    ngIfElse: 0,
+    ngIf: 0,
     ngSwitchCase: 0,
     ngSwitchDefault: 0,
     ngFor: 0,
@@ -97,35 +96,35 @@ export class TemplateDefinition implements Visitor {
     if (ngIfThen) {
       this.templateCallPositionMap.set(
         ngIfThen,
-        `ngIfThen${this.directiveObject.ngIfThen}`
+        `ngIf[${this.directiveObject.ngIf}]`
       );
-      this.directiveObject.ngIfThen += 1;
+      this.directiveObject.ngIf += 1;
     }
     if (ngElseIf) {
       this.templateCallPositionMap.set(
         ngElseIf,
-        `ngElseIf${this.directiveObject.ngIfElse}`
+        `ngIf[${this.directiveObject.ngIf}]`
       );
-      this.directiveObject.ngIfElse += 1;
+      this.directiveObject.ngIf += 1;
     }
     if (ngSwitchCase) {
       this.templateCallPositionMap.set(
         ngSwitchCase,
-        `ngSwitchCase${this.directiveObject.ngSwitchCase}`
+        `ngSwitchCase[${this.directiveObject.ngSwitchCase}]`
       );
       this.directiveObject.ngSwitchCase += 1;
     }
     if (ngSwitchDefault) {
       this.templateCallPositionMap.set(
         ngSwitchDefault,
-        `ngSwitchDefault${this.directiveObject.ngSwitchDefault}`
+        `ngSwitchDefault[${this.directiveObject.ngSwitchDefault}]`
       );
       this.directiveObject.ngSwitchDefault += 1;
     }
     if (ngFor) {
       this.templateCallPositionMap.set(
         ngFor,
-        `ngFor${this.directiveObject.ngFor}`
+        `ngFor[${this.directiveObject.ngFor}]`
       );
       this.directiveObject.ngFor += 1;
     }
